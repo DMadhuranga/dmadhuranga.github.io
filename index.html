@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="bootstrap.min.css" rel="stylesheet">
+    <title>Recurrent Deposit Interest Rate Calculator</title>
+</head>
+
+<body>
+    <div class="row">
+        <div class="col"></div>
+        <div class="col">
+            <div class="card">
+                <h1 class="card-header">Recurrent Deposit Interest Rate Calculator</h1>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="m_installment" class="form-label">Monthly Installment :</label><br>
+                            <input type="text" class="form-control" id="m_installment" name="m_installment" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="months" class="form-label">Number of months :</label><br>
+                            <input type="text" class="form-control" id="months" name="months" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="m_ammount" class="form-label">Maturity Amount :</label><br>
+                            <input type="text" class="form-control" id="m_ammount" name="m_ammount" value="0">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="calculate()">Calculate</button><br><br>
+                        <div id="error_label" hidden="true" class="alert alert-danger" role="alert">
+                            Invalid input
+                        </div>
+                        <div class="alert alert-primary" id="rate_label" hidden="true" role="alert">
+                            Interest rate*
+                        </div>
+                    </form>
+                    <p id="rate_warning" hidden="true">*Please note these are approximate values.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col"></div>
+
+    </div>
+    <div class="row">
+        <div class="col"></div>
+        <div class="col">
+            <p>Many banks, particularly in asia, offer recurrent deposits accounts.
+                Customers have to deposit a fixed amount monthly to the account for a fixed period of time and they'll
+                receive a predefined sum at the end.
+                They've become popular as they suits very well for the people with fixed monthly income.
+                These accounts are marketed under various names and often the effective interest rate is hidden.
+                Usually, the customer will only be given the information on monthly ammount they have to pay and the
+                ammount they receive at the end.
+                The real interest rate is hidden.
+                Unlike with fixed deposit or bonds, for average retail investor, it is quite complex to calculate the
+                underlying interest rate.
+                This calculator helps you to identify the real annual rate of return for any Recurrent Deposit scheme.
+            </p>
+        </div>
+        <div class="col"></div>
+    </div>
+
+    <script>
+        function hideErrors() {
+            document.getElementById("error_label").hidden = true;
+        }
+
+        function hideRate() {
+            document.getElementById("rate_label").hidden = true;
+            document.getElementById("rate_warning").hidden = true;
+        }
+
+        function showRate(rate) {
+            document.getElementById("rate_label").hidden = false;
+            document.getElementById("rate_label").innerText = "Interest rate*: " + rate;
+            document.getElementById("rate_warning").hidden = false;
+        }
+
+        function showError(errMessage) {
+            document.getElementById("error_label").hidden = false;
+            document.getElementById("error_label").innerText = errMessage;
+        }
+
+        function getTotal(p, r, n) {
+            return p * ((((1 + r) ** ((n + 1) / 12) - 1) / ((1 + r) ** (1 / 12) - 1)) - 1);
+        }
+
+        function calculate() {
+            hideErrors();
+            hideRate();
+            var installment = Number(document.getElementById("m_installment").value);
+            var duration = Number(document.getElementById("months").value);
+            var ammount = Number(document.getElementById("m_ammount").value);
+            var valid = true;
+            var errMessage = "";
+            if (isNaN(installment)) {
+                valid = false;
+                errMessage = "Invalid Monthly Installment\n";
+            }
+            if (isNaN(duration) || !Number.isInteger(duration)) {
+                valid = false;
+                errMessage += "Invalid Number of months\n";
+            }
+            if (isNaN(ammount) || (ammount < installment * duration)) {
+                valid = false;
+                errMessage += "Invalid Maturity Amount\n";
+            }
+            if (!valid) {
+                showError(errMessage);
+                return;
+            }
+            var r = 0.1;
+            var previousr = 0;
+            var total = getTotal(installment, r, duration);
+            var errorInTotal = ammount - total;
+            var errorMargin = ammount * 0.0001;
+            while (Math.abs(errorInTotal) > errorMargin) {
+                if (errorInTotal > 0) {
+                    if (previousr > r) {
+                        var r_temp = r;
+                        r = (previousr + r) / 2;
+                        previousr = r_temp;
+                    } else {
+                        previousr = r;
+                        r = 1.1 * r;
+                    }
+                } else {
+                    if (previousr > r) {
+                        previousr = r;
+                        r = 0.9 * r;
+                    } else {
+                        var r_temp = r;
+                        r = (previousr + r) / 2;
+                        previousr = r_temp;
+                    }
+                }
+                total = getTotal(installment, r, duration);
+                errorInTotal = ammount - total;
+            }
+            var ratePrecentage = r * 100;
+            showRate(ratePrecentage + "%");
+        }
+    </script>
+    <script src="bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
